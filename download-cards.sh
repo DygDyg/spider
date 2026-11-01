@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Скрипт для загрузки SVG карт из репозитория Public Domain Playing Cards
-# Источник: https://github.com/AustinGabriel/Public-Domain-and-CC0-Playing-Cards
+# Скрипт для загрузки SVG карт из репозитория OpenDecks
+# Источник: https://github.com/hhonbo/OpenDecks-Public-Domain-and-CC0-Playing-Cards
 # Лицензия: CC0 1.0 Universal (Public Domain)
 
 set -e
 
-echo "=== Загрузка SVG карт из Public Domain Playing Cards ==="
+echo "=== Загрузка SVG карт из OpenDecks ==="
 echo ""
 
-# Базовый URL репозитория
-BASE_URL="https://raw.githubusercontent.com/AustinGabriel/Public-Domain-and-CC0-Playing-Cards/main/svg%20cards/card%20fronts"
+# Базовый URL репозитория OpenDecks
+BASE_URL="https://raw.githubusercontent.com/hhonbo/OpenDecks-Public-Domain-and-CC0-Playing-Cards/main/svg%20cards/card%20fronts"
 
 # Масти
 SUITS=("spades" "hearts" "diamonds" "clubs")
