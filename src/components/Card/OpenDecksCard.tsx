@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Card as CardType } from '../../game/types';
-import { CardFace } from './CardFace';
+import { ClassicCardFace } from './ClassicCardFace';
 
 interface OpenDecksCardProps {
   card: CardType;
@@ -66,6 +66,14 @@ export const OpenDecksCard: React.FC<OpenDecksCardProps> = ({
       const baseUrl = import.meta.env.BASE_URL || '/';
       const svgPath = `${baseUrl}cards/${suitName}/${fileName}`;
       const cacheKey = `${svgPath}-${isDarkTheme}`;
+
+      // Пока в репозитории присутствует лишь один оригинальный SVG.
+      // Не отправляем десятки заведомо неудачных запросов для отсутствующей колоды.
+      if (!(card.suit === 'spades' && card.rank === 1)) {
+        setUseFallback(true);
+        setLoading(false);
+        return;
+      }
 
       // Проверяем кэш
       if (svgCache.has(cacheKey)) {
@@ -147,23 +155,9 @@ export const OpenDecksCard: React.FC<OpenDecksCardProps> = ({
     );
   }
 
-  // Fallback на встроенные SVG если внешний файл не найден
+  // SVG отсутствует или повреждён: используем синхронное Unicode-оформление.
   if (useFallback || !svgContent) {
-    const isBlackSuit = card.suit === 'spades' || card.suit === 'clubs';
-    const fallbackColor = isDarkTheme
-      ? (isBlackSuit ? '#A8C7FA' : '#FF6B6B')
-      : (isBlackSuit ? '#1a1a2e' : '#dc2626');
-
-    return (
-      <svg
-        viewBox="0 0 100 140"
-        preserveAspectRatio="xMidYMid meet"
-        className={`opendecks-card fallback ${className}`}
-      >
-        <rect x="0" y="0" width="100" height="140" rx="6" fill="#fffef7" />
-        <CardFace suit={card.suit} rank={card.rank} color={fallbackColor} />
-      </svg>
-    );
+    return <ClassicCardFace card={card} isDarkTheme={isDarkTheme} className={className} />;
   }
 
   return (
