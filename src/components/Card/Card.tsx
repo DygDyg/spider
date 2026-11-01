@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card as CardType, SUIT_COLORS } from '../../game/types';
+import { Card as CardType } from '../../game/types';
 import { CardFace } from './CardFace';
 
 interface CardProps {
@@ -29,9 +29,15 @@ export const CardComponent: React.FC<CardProps> = ({
   style,
   className = '',
 }) => {
-  const color = isDarkTheme
-    ? (card.suit === 'spades' || card.suit === 'clubs' ? '#A8C7FA' : '#FF6B6B')
-    : SUIT_COLORS[card.suit];
+  // Определяем цвет масти через CSS-переменные
+  // Это позволяет легко менять цвета через CSS
+  const isBlackSuit = card.suit === 'spades' || card.suit === 'clubs';
+  const colorVar = isBlackSuit ? 'var(--suit-black)' : 'var(--suit-red)';
+  
+  // Fallback цвета для случаев, когда CSS-переменные не определены
+  const fallbackColor = isDarkTheme
+    ? (isBlackSuit ? '#A8C7FA' : '#FF6B6B')
+    : (isBlackSuit ? '#1a1a2e' : '#dc2626');
 
   if (!card.faceUp) {
     return (
@@ -80,7 +86,13 @@ export const CardComponent: React.FC<CardProps> = ({
   return (
     <div
       className={`card card-face ${className} ${isHighlighted ? 'card-highlighted' : ''} ${isHint ? 'card-hint' : ''}`}
-      style={style}
+      style={{
+        ...style,
+        // Устанавливаем CSS-переменную для цвета масти
+        // Это позволяет CardFace использовать currentColor
+        ['--card-suit-color' as any]: colorVar,
+        color: fallbackColor, // Fallback для браузеров без поддержки CSS-переменных
+      }}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onPointerDown={onPointerDown}
@@ -106,7 +118,7 @@ export const CardComponent: React.FC<CardProps> = ({
         </defs>
 
         {/* Содержимое карты */}
-        <CardFace suit={card.suit} rank={card.rank} color={color} />
+        <CardFace suit={card.suit} rank={card.rank} color={fallbackColor} />
       </svg>
     </div>
   );

@@ -30,6 +30,10 @@
   --modal-text: #333333;
   --highlight: rgba(76, 175, 80, 0.5);
   --hint-glow: rgba(255, 235, 59, 0.8);
+  
+  /* Цвета мастей для светлой темы */
+  --suit-black: #1a1a2e;
+  --suit-red: #dc2626;
 }
 
 /* Dark Theme */
@@ -52,6 +56,10 @@
   --modal-text: #e0e0e0;
   --highlight: rgba(124, 77, 255, 0.5);
   --hint-glow: rgba(255, 235, 59, 0.8);
+  
+  /* Цвета мастей для тёмной темы: чёрные масти становятся серебристо-голубыми */
+  --suit-black: #A8C7FA;
+  --suit-red: #FF6B6B;
 }
 
 /* Blue Theme */
@@ -74,6 +82,10 @@
   --modal-text: #333333;
   --highlight: rgba(66, 165, 245, 0.5);
   --hint-glow: rgba(255, 235, 59, 0.8);
+  
+  /* Цвета мастей для светлой темы */
+  --suit-black: #1a1a2e;
+  --suit-red: #dc2626;
 }
 
 /* Light Theme */
@@ -96,6 +108,10 @@
   --modal-text: #333333;
   --highlight: rgba(67, 160, 71, 0.4);
   --hint-glow: rgba(255, 152, 0, 0.8);
+  
+  /* Цвета мастей для светлой темы */
+  --suit-black: #1a1a2e;
+  --suit-red: #dc2626;
 }
 
 /* ===== Base Styles ===== */
