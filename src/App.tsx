@@ -4,8 +4,28 @@ import { GameBoard } from './components/GameBoard/GameBoard';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { DifficultyModal, SettingsModal, StatsModal, VictoryModal } from './components/Modals/Modals';
 import { Difficulty } from './game/types';
+import { audioManager } from './services/AudioManager';
 
 function App() {
+  // Инициализация AudioManager при первом взаимодействии пользователя
+  useEffect(() => {
+    const initAudio = () => {
+      audioManager.init();
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('keydown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+    };
+    
+    window.addEventListener('click', initAudio);
+    window.addEventListener('keydown', initAudio);
+    window.addEventListener('touchstart', initAudio);
+    
+    return () => {
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('keydown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+    };
+  }, []);
   const {
     gameState,
     history,

@@ -70,10 +70,20 @@ export interface GameRecord {
   score: number;
 }
 
+export type AnimationSpeed = 'fast' | 'normal' | 'slow';
+
 export interface Settings {
   theme: 'classic' | 'dark' | 'blue' | 'light';
   animations: boolean;
+  animationSpeed: AnimationSpeed;
+  dealAnimation: boolean;
+  moveAnimation: boolean;
+  completeAnimation: boolean;
   sound: boolean;
+  soundVolume: number; // 0-100
+  cardSounds: boolean;
+  interfaceSounds: boolean;
+  victorySounds: boolean;
   autoCollect: boolean;
   highlightMoves: boolean;
   showTimer: boolean;
