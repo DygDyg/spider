@@ -34,6 +34,8 @@ function App() {
     stats,
     notification,
     elapsedTime,
+    animationState,
+    dealId,
     startNewGame,
     makeMove,
     deal,
@@ -42,6 +44,7 @@ function App() {
     showHint,
     updateSettings,
     resetStats,
+    completeAnimation,
     canDeal,
   } = useGame();
 
@@ -130,6 +133,7 @@ function App() {
         canUndo={history.past.length > 0}
         canRedo={history.future.length > 0}
         canDeal={canDeal}
+        animationState={animationState}
         onNewGame={handleNewGameClick}
         onUndo={undo}
         onRedo={redo}
@@ -143,8 +147,11 @@ function App() {
         gameState={gameState}
         hint={hint}
         settings={settings}
+        animationState={animationState}
+        dealId={dealId}
         onMove={makeMove}
         onDeal={deal}
+        onCompleteAnimation={completeAnimation}
         canDeal={canDeal}
       />
 

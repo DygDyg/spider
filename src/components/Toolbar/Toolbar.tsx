@@ -2,12 +2,15 @@ import React from 'react';
 import { GameState, DIFFICULTY_NAMES } from '../../game/types';
 import { audioManager } from '../../services/AudioManager';
 
+import { AnimationState } from '../../hooks/useGame';
+
 interface ToolbarProps {
   gameState: GameState | null;
   elapsedTime: number;
   canUndo: boolean;
   canRedo: boolean;
   canDeal: boolean;
+  animationState: AnimationState;
   onNewGame: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -29,6 +32,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   canUndo,
   canRedo,
   canDeal,
+  animationState,
   onNewGame,
   onUndo,
   onRedo,
@@ -37,6 +41,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onSettings,
   onStats,
 }) => {
+  const isAnimating = animationState !== 'idle';
+  
   const handleClick = (callback: () => void) => {
     audioManager.play('buttonClick');
     callback();
@@ -51,21 +57,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </svg>
           <span className="btn-text">Новая</span>
         </button>
-        <button className="toolbar-btn" onClick={() => handleClick(onUndo)} disabled={!canUndo} aria-label="Отменить ход">
+        <button className="toolbar-btn" onClick={() => handleClick(onUndo)} disabled={!canUndo || isAnimating} aria-label="Отменить ход">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 10h10a5 5 0 0 1 0 10H9"/>
             <path d="M3 10l4-4M3 10l4 4"/>
           </svg>
           <span className="btn-text">Отмена</span>
         </button>
-        <button className="toolbar-btn" onClick={() => handleClick(onRedo)} disabled={!canRedo} aria-label="Повторить ход">
+        <button className="toolbar-btn" onClick={() => handleClick(onRedo)} disabled={!canRedo || isAnimating} aria-label="Повторить ход">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 10H11a5 5 0 0 0 0 10h4"/>
             <path d="M21 10l-4-4M21 10l-4 4"/>
           </svg>
           <span className="btn-text">Повтор</span>
         </button>
-        <button className="toolbar-btn" onClick={() => handleClick(onHint)} disabled={!gameState || gameState.gameOver} aria-label="Подсказка">
+        <button className="toolbar-btn" onClick={() => handleClick(onHint)} disabled={!gameState || gameState.gameOver || isAnimating} aria-label="Подсказка">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 18h6M10 22h4"/>
             <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>
@@ -73,7 +79,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <span className="btn-text">Подсказка</span>
         </button>
         {gameState && gameState.stock.length > 0 && (
-          <button className="toolbar-btn" onClick={() => handleClick(onDeal)} disabled={!canDeal} aria-label="Раздать карты">
+          <button className="toolbar-btn" onClick={() => handleClick(onDeal)} disabled={!canDeal || isAnimating} aria-label="Раздать карты">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="7" width="15" height="12" rx="2"/>
               <rect x="7" y="3" width="15" height="12" rx="2"/>

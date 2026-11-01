@@ -15,6 +15,9 @@ import { animationManager } from '../services/AnimationManager';
 
 const SAVE_VERSION = 1;
 
+// Состояния анимационного процесса
+export type AnimationState = 'idle' | 'initial-deal' | 'stock-deal' | 'card-move' | 'completing-sequence';
+
 export function useGame() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [history, setHistory] = useState<{ past: GameState[]; future: GameState[] }>({ past: [], future: [] });
@@ -42,11 +45,20 @@ export function useGame() {
   const [stats, setStatsState] = useState<Record<Difficulty, GameStats>>(() => loadStats());
   const [notification, setNotification] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [animationState, setAnimationState] = useState<AnimationState>('idle');
+  const [dealId, setDealId] = useState<string | null>(null);
   
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gameStateRef = useRef(gameState);
   const elapsedTimeRef = useRef(elapsedTime);
   const statsRef = useRef(stats);
+  const animationStateRef = useRef(animationState);
+  
+  // Keep refs in sync
+  gameStateRef.current = gameState;
+  elapsedTimeRef.current = elapsedTime;
+  statsRef.current = stats;
+  animationStateRef.current = animationState;
   
   // Keep refs in sync
   gameStateRef.current = gameState;
@@ -139,11 +151,16 @@ export function useGame() {
 
   // Новая игра
   const startNewGame = useCallback((difficulty: Difficulty, seed?: string) => {
+    // Генерируем уникальный dealId для этой раздачи
+    const newDealId = `deal_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    
     const newState = createInitialState(difficulty, seed);
     setGameState(newState);
     setHistory({ past: [], future: [] });
     setHint(null);
     setElapsedTime(0);
+    setDealId(newDealId);
+    setAnimationState('initial-deal');
 
     // Обновляем статистику
     setStatsState(prev => {
@@ -208,6 +225,9 @@ export function useGame() {
   const deal = useCallback(() => {
     const currentState = gameStateRef.current;
     if (!currentState || currentState.gameOver) return;
+    
+    // Блокируем раздачу во время анимации
+    if (animationStateRef.current !== 'idle') return;
 
     if (!canDeal(currentState)) {
       audioManager.play('invalidMove');
@@ -220,12 +240,19 @@ export function useGame() {
     }
 
     audioManager.play('cardDeal');
+    
+    // Устанавливаем состояние анимации раздачи из резерва
+    setAnimationState('stock-deal');
 
     const newState = dealFromStock(currentState);
-    if (!newState) return;
+    if (!newState) {
+      setAnimationState('idle');
+      return;
+    }
 
     if (!validateCardCount(newState)) {
       console.error('Card count invariant violated after deal!');
+      setAnimationState('idle');
       return;
     }
 
@@ -243,6 +270,11 @@ export function useGame() {
       handleVictory(newState);
     }
   }, [showNotification, handleVictory]);
+  
+  // Завершение анимации
+  const completeAnimation = useCallback(() => {
+    setAnimationState('idle');
+  }, []);
 
   // Отмена хода
   const undo = useCallback(() => {
@@ -349,6 +381,8 @@ export function useGame() {
     stats,
     notification,
     elapsedTime,
+    animationState,
+    dealId,
     startNewGame,
     makeMove,
     deal,
@@ -358,6 +392,7 @@ export function useGame() {
     updateSettings,
     resetStats,
     showNotification,
+    completeAnimation,
     canDeal: gameState ? canDeal(gameState) : false,
   };
 }
