@@ -338,6 +338,18 @@ html, body {
   justify-content: space-between;
   padding: 3px 4px;
   overflow: hidden;
+  position: relative;
+}
+
+.card-face::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .card-back {
@@ -424,11 +436,194 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .card-suit-large {
   font-size: 24px;
   line-height: 1;
+}
+
+/* ===== Раскладка символов мастей на числовых картах ===== */
+.card-pips {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.pip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Классическая раскладка для числовых карт */
+/* 2: верх и низ */
+.pip-top {
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pip-bottom {
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+}
+
+/* 3: верх, центр, низ */
+.pip-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Угловые позиции для 4, 5, 6, 7, 8, 9, 10 */
+.pip-top-left {
+  top: 20%;
+  left: 30%;
+  transform: translate(-50%, -50%);
+}
+
+.pip-top-right {
+  top: 20%;
+  right: 30%;
+  transform: translate(50%, -50%);
+}
+
+.pip-bottom-left {
+  bottom: 20%;
+  left: 30%;
+  transform: translate(-50%, 50%) rotate(180deg);
+}
+
+.pip-bottom-right {
+  bottom: 20%;
+  right: 30%;
+  transform: translate(50%, 50%) rotate(180deg);
+}
+
+/* Средние позиции для 6, 7, 8, 9, 10 */
+.pip-middle-left {
+  top: 50%;
+  left: 30%;
+  transform: translate(-50%, -50%);
+}
+
+.pip-middle-right {
+  top: 50%;
+  right: 30%;
+  transform: translate(50%, -50%);
+}
+
+/* Центральные позиции для 7, 8, 9, 10 */
+.pip-top-center {
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pip-bottom-center {
+  bottom: 20%;
+  left: 50%;
+  transform: translate(-50%, 50%) rotate(180deg);
+}
+
+.pip-middle-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Дополнительные позиции для 10 */
+.pip-middle-top {
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pip-middle-bottom {
+  top: 65%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* Туз - большой символ по центру */
+.ace-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pip-center-large {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Фигурные карты */
+.face-card-svg {
+  width: 80%;
+  height: 80%;
+  max-width: 50px;
+  max-height: 70px;
+}
+
+/* Адаптивные размеры для маленьких экранов */
+@media (max-width: 768px) {
+  .card-pips svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .ace-layout svg {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .face-card-svg {
+    max-width: 40px;
+    max-height: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-pips svg {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .ace-layout svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .face-card-svg {
+    max-width: 30px;
+    max-height: 42px;
+  }
+}
+
+@media (max-width: 360px) {
+  .card-pips svg {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .ace-layout svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .face-card-svg {
+    max-width: 24px;
+    max-height: 34px;
+  }
 }
 
 .card-face-card {

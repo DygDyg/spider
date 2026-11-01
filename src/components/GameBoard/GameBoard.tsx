@@ -276,6 +276,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     card={card}
                     isHighlighted={isSelected}
                     isHint={isHintSource}
+                    isDarkTheme={settings.theme === 'dark'}
                     onClick={() => {
                       if (card.faceUp) {
                         handleCardClick(colIndex, cardIndex);
@@ -314,7 +315,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               className="drag-card"
               style={{ top: `${i * 25}px` }}
             >
-              <CardComponent card={card} />
+              <CardComponent card={card} isDarkTheme={settings.theme === 'dark'} />
             </div>
           ))}
         </div>
@@ -346,7 +347,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div className="completed-area">
         {gameState.completedSets.map((set, i) => (
           <div key={i} className="completed-set">
-            <CardComponent card={{ ...set[0], faceUp: true }} />
+            <CardComponent card={{ ...set[0], faceUp: true }} isDarkTheme={settings.theme === 'dark'} />
           </div>
         ))}
         {Array.from({ length: 8 - gameState.completedSets.length }).map((_, i) => (
