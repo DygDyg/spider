@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -29,6 +31,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate PWA PNG icons
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin
+          rsvg-convert -w 192 -h 192 public/icons/spider.svg > public/icons/spider-192.png
+          rsvg-convert -w 512 -h 512 public/icons/spider.svg > public/icons/spider-512.png
 
       - name: Build
         run: npm run build

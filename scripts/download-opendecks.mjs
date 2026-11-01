@@ -10,12 +10,12 @@ for(const suit of suits){
   for(const rank of ranks){
     const filename=rank+' of '+suit+'.svg',path=join(root,suit,filename);
     let data=null;
-    try{data=await readFile(path,'utf8');if(!/<svg[\\s>]/.test(data)||data.length<500)data=null;}catch{}
+    try{data=await readFile(path,'utf8');if(!/<svg[\s>]/.test(data)||data.length<500)data=null;}catch{}
     if(!data){
       const url=base+'/'+suit+'/'+encodeURIComponent(filename);
       let lastError;
       for(let attempt=0;attempt<3;attempt++){
-        try{const response=await fetch(url);if(!response.ok)throw Error('HTTP '+response.status+': '+url);data=await response.text();if(!/<svg[\\s>]/.test(data)||data.length<500)throw Error('Invalid SVG '+url);await writeFile(path,data);break;}
+        try{const response=await fetch(url);if(!response.ok)throw Error('HTTP '+response.status+': '+url);data=await response.text();if(!/<svg[\s>]/.test(data)||data.length<500)throw Error('Invalid SVG '+url);await writeFile(path,data);break;}
         catch(err){lastError=err;data=null;await new Promise(r=>setTimeout(r,500*(attempt+1)));}
       }
       if(!data)throw lastError;
