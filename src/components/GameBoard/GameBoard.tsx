@@ -42,6 +42,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const [selectedCard, setSelectedCard] = useState<{ column: number; index: number } | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const dragRef = useRef<(DragState & { pointerId: number }) | null>(null);
+  const suppressClickRef = useRef(false);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const [boardHeight, setBoardHeight] = useState(600);
   const [arrowCoords, setArrowCoords] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
@@ -436,6 +438,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Начало перетаскивания
   const handlePointerDown = useCallback((e: React.PointerEvent, colIndex: number, cardIndex: number) => {
     if (gameState.gameOver || animationState !== 'idle') return;
+    if (dragRef.current) return;
     
     const card = gameState.columns[colIndex].cards[cardIndex];
     if (!card.faceUp) return;
@@ -445,9 +448,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     e.preventDefault();
     e.stopPropagation();
-    boardRef.current?.setPointerCapture(e.pointerId);
+    try { boardRef.current?.setPointerCapture(e.pointerId); } catch { /* pointer was already released */ }
 
-    setDragState({
+    const gesture = {
+      pointerId: e.pointerId,
       fromColumn: colIndex,
       cardIndex,
       cards,
@@ -456,53 +460,62 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       currentX: e.clientX,
       currentY: e.clientY,
       isDragging: false,
-    });
+    };
+    dragRef.current = gesture;
+    setDragState(gesture);
     setSelectedCard(null);
   }, [gameState]);
 
-  // Перемещение
+  // Pointer events use a ref, so fast gestures never depend on a delayed React render.
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragState) return;
-
-    const dx = e.clientX - dragState.startX;
-    const dy = e.clientY - dragState.startY;
-    
-    if (!dragState.isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-      setDragState(prev => prev ? { ...prev, isDragging: true } : null);
-    }
-
-    if (dragState.isDragging || Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      setDragState(prev => prev ? { ...prev, isDragging: true, currentX: e.clientX, currentY: e.clientY } : null);
-      
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const moved = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 5;
+    const next = { ...drag, currentX: e.clientX, currentY: e.clientY, isDragging: drag.isDragging || moved };
+    dragRef.current = next;
+    if (next.isDragging) {
+      e.preventDefault();
+      setDragState(next);
       const col = getColumnAtPoint(e.clientX, e.clientY);
-      setDropTarget(col !== dragState.fromColumn ? col : null);
+      setDropTarget(col !== next.fromColumn ? col : null);
     }
-  }, [dragState, getColumnAtPoint]);
+  }, [getColumnAtPoint]);
 
-  // Конец перетаскивания
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!dragState) return;
-
-    if (boardRef.current?.hasPointerCapture(e.pointerId)) boardRef.current.releasePointerCapture(e.pointerId);
-    const target = getColumnAtPoint(e.clientX, e.clientY);
-    const distance = Math.hypot(e.clientX - dragState.startX, e.clientY - dragState.startY);
-    if ((dragState.isDragging || distance > 5) && target !== null && target !== dragState.fromColumn) {
-      const targetCol = gameState.columns[target];
-      const cards = gameState.columns[dragState.fromColumn].cards.slice(dragState.cardIndex);
-      
-      if (targetCol.cards.length === 0 || canPlaceCards(cards, targetCol)) {
-        onMove(dragState.fromColumn, target, dragState.cardIndex);
+  const finishPointer = useCallback((e: React.PointerEvent, cancelled = false) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    if (boardRef.current?.hasPointerCapture(e.pointerId)) {
+      boardRef.current.releasePointerCapture(e.pointerId);
+    }
+    const moved = drag.isDragging || Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 5;
+    if (moved) {
+      suppressClickRef.current = true;
+      // A click following the pointerup must not select a different card.
+      window.setTimeout(() => { suppressClickRef.current = false; }, 0);
+    }
+    if (!cancelled && moved) {
+      const target = getColumnAtPoint(e.clientX, e.clientY);
+      if (target !== null && target !== drag.fromColumn) {
+        const from = gameState.columns[drag.fromColumn];
+        const to = gameState.columns[target];
+        const cards = from.cards.slice(drag.cardIndex);
+        if (cards.length && isValidSequence(cards) && (to.cards.length === 0 || canPlaceCards(cards, to))) {
+          onMove(drag.fromColumn, target, drag.cardIndex);
+        }
       }
     }
-
     setDragState(null);
     setDropTarget(null);
-  }, [dragState, gameState, onMove, getColumnAtPoint]);
+  }, [gameState, onMove, getColumnAtPoint]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => finishPointer(e), [finishPointer]);
+  const handlePointerCancel = useCallback((e: React.PointerEvent) => finishPointer(e, true), [finishPointer]);
 
   // Клик по карте
   const handleCardClick = useCallback((colIndex: number, cardIndex: number) => {
     if (gameState.gameOver) return;
-    if (dragState?.isDragging) return;
+    if (suppressClickRef.current || dragRef.current?.isDragging) return;
 
     const card = gameState.columns[colIndex].cards[cardIndex];
     if (!card.faceUp) return;
@@ -594,8 +607,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       className="game-board"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      style={{ touchAction: dragState ? 'none' : 'auto' }}
+      onPointerCancel={handlePointerCancel}
+      style={{ touchAction: 'none' }}
     >
       <div className="columns-container">
         {gameState.columns.map((column, colIndex) => (
