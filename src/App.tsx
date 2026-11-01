@@ -5,8 +5,32 @@ import { Toolbar } from './components/Toolbar/Toolbar';
 import { DifficultyModal, SettingsModal, StatsModal, VictoryModal } from './components/Modals/Modals';
 import { Difficulty } from './game/types';
 import { audioManager } from './services/AudioManager';
+import CardPreview from './pages/CardPreview';
 
 function App() {
+  // Проверка маршрута для страницы предпросмотра карт
+  const [showCardPreview, setShowCardPreview] = useState(
+    window.location.pathname === '/card-preview' || 
+    window.location.pathname.endsWith('/card-preview')
+  );
+
+  // Обработка изменения маршрута
+  useEffect(() => {
+    const handlePathChange = () => {
+      setShowCardPreview(
+        window.location.pathname === '/card-preview' || 
+        window.location.pathname.endsWith('/card-preview')
+      );
+    };
+
+    window.addEventListener('popstate', handlePathChange);
+    return () => window.removeEventListener('popstate', handlePathChange);
+  }, []);
+
+  // Если это страница предпросмотра карт - показываем её
+  if (showCardPreview) {
+    return <CardPreview />;
+  }
   // Инициализация AudioManager при первом взаимодействии пользователя
   useEffect(() => {
     const initAudio = () => {

@@ -409,6 +409,181 @@ html, body {
 
 /* Все стили карт теперь через единый SVG с viewBox — пропорции сохраняются автоматически */
 
+/* OpenDecks Card Styles */
+.opendecks-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.opendecks-card svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.opendecks-card.loading {
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+}
+
+.card-loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--accent, #4caf50);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.opendecks-card.error {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+}
+
+.card-error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.card-opendecks {
+  width: 100%;
+  height: 100%;
+}
+
+/* Card Preview Page Styles */
+.card-preview-page {
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--bg-felt-texture);
+  color: var(--text-primary);
+}
+
+.preview-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.preview-header h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.preview-header p {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: var(--text-secondary);
+}
+
+.theme-toggle-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.preview-card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-card {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.preview-card:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.preview-card-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.preview-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding: 20px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.preview-footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.preview-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 12px;
+  }
+  
+  .preview-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .preview-card-label {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+  }
+  
+  .preview-card-label {
+    font-size: 10px;
+  }
+}
+
 .card-highlighted {
   box-shadow: 0 0 8px var(--highlight), 0 2px 4px var(--card-shadow);
   border-color: var(--accent);

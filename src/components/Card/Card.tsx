@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card as CardType } from '../../game/types';
-import { CardFace } from './CardFace';
+import { OpenDecksCard } from './OpenDecksCard';
 
 interface CardProps {
   card: CardType;
@@ -29,16 +29,6 @@ export const CardComponent: React.FC<CardProps> = ({
   style,
   className = '',
 }) => {
-  // Определяем цвет масти через CSS-переменные
-  // Это позволяет легко менять цвета через CSS
-  const isBlackSuit = card.suit === 'spades' || card.suit === 'clubs';
-  const colorVar = isBlackSuit ? 'var(--suit-black)' : 'var(--suit-red)';
-  
-  // Fallback цвета для случаев, когда CSS-переменные не определены
-  const fallbackColor = isDarkTheme
-    ? (isBlackSuit ? '#A8C7FA' : '#FF6B6B')
-    : (isBlackSuit ? '#1a1a2e' : '#dc2626');
-
   if (!card.faceUp) {
     return (
       <div
@@ -49,7 +39,7 @@ export const CardComponent: React.FC<CardProps> = ({
       >
         <svg
           viewBox={`0 0 ${VW} ${VH}`}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
           className="card-svg"
         >
           {/* Фон рубашки */}
@@ -86,40 +76,16 @@ export const CardComponent: React.FC<CardProps> = ({
   return (
     <div
       className={`card card-face ${className} ${isHighlighted ? 'card-highlighted' : ''} ${isHint ? 'card-hint' : ''}`}
-      style={{
-        ...style,
-        // Устанавливаем CSS-переменную для цвета масти
-        // Это позволяет CardFace использовать currentColor
-        ['--card-suit-color' as any]: colorVar,
-        color: fallbackColor, // Fallback для браузеров без поддержки CSS-переменных
-      }}
+      style={style}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onPointerDown={onPointerDown}
     >
-      <svg
-        viewBox={`0 0 ${VW} ${VH}`}
-        preserveAspectRatio="none"
-        className="card-svg"
-      >
-        {/* Фон карты */}
-        <rect x="0" y="0" width={VW} height={VH} rx="6" fill="#fffef7" />
-        <rect x="0" y="0" width={VW} height={VH} rx="6" fill="url(#faceSheen)" />
-
-        {/* Тонкая внутренняя рамка */}
-        <rect x="2" y="2" width={VW - 4} height={VH - 4} rx="5" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5" />
-
-        <defs>
-          <linearGradient id="faceSheen" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.03)" />
-          </linearGradient>
-        </defs>
-
-        {/* Содержимое карты */}
-        <CardFace suit={card.suit} rank={card.rank} color={fallbackColor} />
-      </svg>
+      <OpenDecksCard 
+        card={card} 
+        isDarkTheme={isDarkTheme} 
+        className="card-opendecks"
+      />
     </div>
   );
 };
