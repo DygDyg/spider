@@ -66,7 +66,9 @@ export const SVGCard: React.FC<SVGCardProps> = ({ suit, rank, isDarkTheme = fals
         const fileName = `${rankName} of ${suitName}.svg`;
         
         // Путь к SVG файлу в public/cards/svg/
-        const svgPath = `/cards/svg/${suitName}/${fileName}`;
+        // Используем BASE_URL для корректной работы на GitHub Pages
+        const baseUrl = import.meta.env.BASE_URL || '/';
+        const svgPath = `${baseUrl}cards/svg/${suitName}/${fileName}`;
         
         const response = await fetch(svgPath);
         if (!response.ok) {
