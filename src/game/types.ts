@@ -73,6 +73,7 @@ export interface GameRecord {
 export type AnimationSpeed = 'fast' | 'normal' | 'slow';
 
 export interface Settings {
+  cardDeck: 'opendecks' | 'classic';
   theme: 'classic' | 'dark' | 'blue' | 'light';
   animations: boolean;
   animationSpeed: AnimationSpeed;

@@ -6,6 +6,7 @@ const STATS_KEY = 'spider_solitaire_stats';
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'classic',
+  cardDeck: 'opendecks',
   animations: true,
   animationSpeed: 'normal',
   dealAnimation: true,

@@ -1,12 +1,14 @@
 import React from 'react';
 import { Card as CardType } from '../../game/types';
 import { OpenDecksCard } from './OpenDecksCard';
+import { ClassicCardFace } from './ClassicCardFace';
 
 interface CardProps {
   card: CardType;
   isHighlighted?: boolean;
   isHint?: boolean;
   isDarkTheme?: boolean;
+  cardDeck?: 'opendecks' | 'classic';
   onClick?: () => void;
   onDoubleClick?: () => void;
   onPointerDown?: (e: React.PointerEvent) => void;
@@ -23,6 +25,7 @@ export const CardComponent: React.FC<CardProps> = ({
   isHighlighted = false,
   isHint = false,
   isDarkTheme = false,
+  cardDeck = 'opendecks',
   onClick,
   onDoubleClick,
   onPointerDown,
@@ -81,11 +84,9 @@ export const CardComponent: React.FC<CardProps> = ({
       onDoubleClick={onDoubleClick}
       onPointerDown={onPointerDown}
     >
-      <OpenDecksCard 
-        card={card} 
-        isDarkTheme={isDarkTheme} 
-        className="card-opendecks"
-      />
+      {cardDeck === 'classic'
+        ? <ClassicCardFace card={card} isDarkTheme={isDarkTheme} className="card-opendecks" />
+        : <OpenDecksCard card={card} isDarkTheme={isDarkTheme} className="card-opendecks" />}
     </div>
   );
 };
