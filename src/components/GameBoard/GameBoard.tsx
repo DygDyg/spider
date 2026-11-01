@@ -219,7 +219,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const availableHeight = Math.max(300, boardHeight - 180);
     const maxOffset = 28;
     const minOffset = 14;
-    const cardHeight = 70; // approximate card height
+    // Вычисляем высоту карты на основе ширины и фиксированного aspect-ratio (5:7)
+    const cardWidth = columnRefs.current[0]?.clientWidth || 70;
+    const cardHeight = cardWidth * 7 / 5;
     const maxStackHeight = availableHeight - cardHeight;
     const offset = totalCards > 1 
       ? Math.min(maxOffset, Math.max(minOffset, maxStackHeight / (totalCards - 1)))

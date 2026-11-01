@@ -3,11 +3,11 @@
 /* ===== CSS Variables & Themes ===== */
 :root {
   --card-width: 70px;
-  --card-height: 98px;
   --card-radius: 6px;
   --column-gap: 6px;
   --board-padding: 10px;
   --toolbar-height: 50px;
+  --card-aspect-ratio: 5 / 7;
 }
 
 /* Classic Green Theme */
@@ -281,7 +281,7 @@ html, body {
 
 .column-empty-placeholder {
   width: 100%;
-  height: var(--card-height);
+  aspect-ratio: var(--card-aspect-ratio);
   border: 2px dashed rgba(255,255,255,0.2);
   border-radius: var(--card-radius);
 }
@@ -317,7 +317,7 @@ html, body {
 /* ===== Card Styles ===== */
 .card {
   width: 100%;
-  height: var(--card-height);
+  aspect-ratio: var(--card-aspect-ratio);
   border-radius: var(--card-radius);
   position: relative;
   cursor: pointer;
@@ -478,7 +478,7 @@ html, body {
 
 .stock-pile {
   width: var(--card-width);
-  height: var(--card-height);
+  aspect-ratio: var(--card-aspect-ratio);
   border-radius: var(--card-radius);
   border: 2px dashed rgba(255,255,255,0.3);
   background: rgba(0,0,0,0.2);
@@ -546,7 +546,7 @@ html, body {
 
 .completed-set {
   width: calc(var(--card-width) * 0.6);
-  height: calc(var(--card-height) * 0.6);
+  aspect-ratio: var(--card-aspect-ratio);
 }
 
 .completed-set .card {
@@ -557,7 +557,7 @@ html, body {
 
 .completed-slot {
   width: calc(var(--card-width) * 0.6);
-  height: calc(var(--card-height) * 0.6);
+  aspect-ratio: var(--card-aspect-ratio);
   border: 1px dashed rgba(255,255,255,0.2);
   border-radius: 4px;
 }
@@ -1038,7 +1038,6 @@ html, body {
 @media (max-width: 1024px) {
   :root {
     --card-width: 60px;
-    --card-height: 84px;
     --column-gap: 4px;
   }
   
@@ -1052,7 +1051,6 @@ html, body {
 @media (max-width: 768px) {
   :root {
     --card-width: 50px;
-    --card-height: 70px;
     --column-gap: 3px;
     --board-padding: 6px;
     --toolbar-height: 44px;
@@ -1102,7 +1100,6 @@ html, body {
 @media (max-width: 480px) {
   :root {
     --card-width: 36px;
-    --card-height: 52px;
     --column-gap: 2px;
     --board-padding: 4px;
   }
@@ -1159,7 +1156,6 @@ html, body {
 @media (max-width: 360px) {
   :root {
     --card-width: 30px;
-    --card-height: 44px;
   }
   
   .card-rank { font-size: 7px; }
