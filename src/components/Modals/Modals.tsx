@@ -94,14 +94,106 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           </div>
           
           <div className="settings-group">
+            <label className="settings-label">Анимации</label>
             <label className="settings-toggle">
               <input
                 type="checkbox"
                 checked={settings.animations}
                 onChange={e => onUpdate({ animations: e.target.checked })}
               />
-              <span>Анимации</span>
+              <span>Включить анимации</span>
             </label>
+            {settings.animations && (
+              <>
+                <label className="settings-label" style={{ marginTop: '10px', fontSize: '13px' }}>Скорость анимаций</label>
+                <div className="size-options">
+                  {(['fast', 'normal', 'slow'] as const).map(speed => (
+                    <button
+                      key={speed}
+                      className={`size-btn ${settings.animationSpeed === speed ? 'active' : ''}`}
+                      onClick={() => onUpdate({ animationSpeed: speed })}
+                    >
+                      {speed === 'fast' ? 'Быстрая' : speed === 'normal' ? 'Нормальная' : 'Медленная'}
+                    </button>
+                  ))}
+                </div>
+                <label className="settings-toggle" style={{ marginTop: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.dealAnimation}
+                    onChange={e => onUpdate({ dealAnimation: e.target.checked })}
+                  />
+                  <span>Анимация раздачи</span>
+                </label>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.moveAnimation}
+                    onChange={e => onUpdate({ moveAnimation: e.target.checked })}
+                  />
+                  <span>Анимация перемещения карт</span>
+                </label>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.completeAnimation}
+                    onChange={e => onUpdate({ completeAnimation: e.target.checked })}
+                  />
+                  <span>Анимация завершения последовательностей</span>
+                </label>
+              </>
+            )}
+          </div>
+
+          <div className="settings-group">
+            <label className="settings-label">Звуки</label>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                checked={settings.sound}
+                onChange={e => onUpdate({ sound: e.target.checked })}
+              />
+              <span>Включить звуки</span>
+            </label>
+            {settings.sound && (
+              <>
+                <label className="settings-label" style={{ marginTop: '10px', fontSize: '13px' }}>
+                  Громкость: {settings.soundVolume}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={settings.soundVolume}
+                  onChange={e => onUpdate({ soundVolume: parseInt(e.target.value) })}
+                  style={{ width: '100%', marginTop: '5px' }}
+                />
+                <label className="settings-toggle" style={{ marginTop: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.cardSounds}
+                    onChange={e => onUpdate({ cardSounds: e.target.checked })}
+                  />
+                  <span>Звуки карт</span>
+                </label>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.interfaceSounds}
+                    onChange={e => onUpdate({ interfaceSounds: e.target.checked })}
+                  />
+                  <span>Звуки интерфейса</span>
+                </label>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.victorySounds}
+                    onChange={e => onUpdate({ victorySounds: e.target.checked })}
+                  />
+                  <span>Звуки победы</span>
+                </label>
+              </>
+            )}
           </div>
 
           <div className="settings-group">

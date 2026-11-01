@@ -10,6 +10,8 @@ import {
   validateCardCount,
 } from '../game/engine';
 import { loadGame, saveGame, loadSettings, saveSettings, loadStats, saveStats } from '../services/storage';
+import { audioManager } from '../services/AudioManager';
+import { animationManager } from '../services/AnimationManager';
 
 const SAVE_VERSION = 1;
 
@@ -17,7 +19,26 @@ export function useGame() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [history, setHistory] = useState<{ past: GameState[]; future: GameState[] }>({ past: [], future: [] });
   const [hint, setHint] = useState<Hint | null>(null);
-  const [settings, setSettingsState] = useState<Settings>(() => loadSettings());
+  const [settings, setSettingsState] = useState<Settings>(() => {
+    const loaded = loadSettings();
+    // Инициализация AudioManager
+    audioManager.setConfig({
+      enabled: loaded.sound,
+      volume: loaded.soundVolume / 100,
+      cardSounds: loaded.cardSounds,
+      interfaceSounds: loaded.interfaceSounds,
+      victorySounds: loaded.victorySounds,
+    });
+    // Инициализация AnimationManager
+    animationManager.setConfig({
+      enabled: loaded.animations,
+      speed: loaded.animationSpeed,
+      dealAnimation: loaded.dealAnimation,
+      moveAnimation: loaded.moveAnimation,
+      completeAnimation: loaded.completeAnimation,
+    });
+    return loaded;
+  });
   const [stats, setStatsState] = useState<Record<Difficulty, GameStats>>(() => loadStats());
   const [notification, setNotification] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -82,6 +103,8 @@ export function useGame() {
 
   // Обработка победы
   const handleVictory = useCallback((state: GameState) => {
+    audioManager.play('victory');
+    
     const time = elapsedTimeRef.current;
     const currentStats = statsRef.current;
     const diff = state.difficulty;
@@ -143,12 +166,24 @@ export function useGame() {
     if (!currentState || currentState.gameOver) return false;
 
     const result = moveCards(currentState, fromColumn, toColumn, cardIndex);
-    if (!result) return false;
+    if (!result) {
+      audioManager.play('invalidMove');
+      return false;
+    }
 
     // Валидация
     if (!validateCardCount(result.newState)) {
       console.error('Card count invariant violated!');
       return false;
+    }
+
+    // Воспроизведение звуков
+    audioManager.play('cardMove');
+    setTimeout(() => audioManager.play('cardPlace'), 100);
+    
+    // Звук завершения последовательности
+    if (result.newState.completedSets.length > currentState.completedSets.length) {
+      setTimeout(() => audioManager.play('sequenceComplete'), 200);
     }
 
     setHistory(prev => ({
@@ -175,6 +210,7 @@ export function useGame() {
     if (!currentState || currentState.gameOver) return;
 
     if (!canDeal(currentState)) {
+      audioManager.play('invalidMove');
       if (currentState.stock.length === 0) {
         showNotification('Резерв пуст');
       } else {
@@ -182,6 +218,8 @@ export function useGame() {
       }
       return;
     }
+
+    audioManager.play('cardDeal');
 
     const newState = dealFromStock(currentState);
     if (!newState) return;
@@ -210,6 +248,8 @@ export function useGame() {
   const undo = useCallback(() => {
     if (history.past.length === 0) return;
 
+    audioManager.play('undo');
+
     const previousState = history.past[history.past.length - 1];
     setHistory(prev => ({
       past: prev.past.slice(0, -1),
@@ -222,6 +262,8 @@ export function useGame() {
   // Повтор хода
   const redo = useCallback(() => {
     if (history.future.length === 0) return;
+
+    audioManager.play('redo');
 
     const nextState = history.future[0];
     setHistory(prev => ({
@@ -265,6 +307,25 @@ export function useGame() {
     setSettingsState(prev => {
       const updated = { ...prev, ...newSettings };
       saveSettings(updated);
+      
+      // Синхронизация с AudioManager
+      audioManager.setConfig({
+        enabled: updated.sound,
+        volume: updated.soundVolume / 100,
+        cardSounds: updated.cardSounds,
+        interfaceSounds: updated.interfaceSounds,
+        victorySounds: updated.victorySounds,
+      });
+      
+      // Синхронизация с AnimationManager
+      animationManager.setConfig({
+        enabled: updated.animations,
+        speed: updated.animationSpeed,
+        dealAnimation: updated.dealAnimation,
+        moveAnimation: updated.moveAnimation,
+        completeAnimation: updated.completeAnimation,
+      });
+      
       return updated;
     });
   }, []);

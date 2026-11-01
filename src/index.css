@@ -997,6 +997,74 @@ html, body {
   }
 }
 
+/* Card flip animation */
+.card-flip {
+  animation: cardFlip 300ms ease-in-out;
+  transform-style: preserve-3d;
+}
+
+@keyframes cardFlip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+/* Card move animation */
+.card-moving {
+  transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  z-index: 1000;
+}
+
+/* Card return animation */
+.card-returning {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Completion glow animation */
+@keyframes glowFade {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+/* Confetti animation */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Victory animation */
+.victory-card {
+  animation: victoryFly 1500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes victoryFly {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* Stock deal animation */
 .stock-pile:active:not(:disabled) {
   transform: scale(0.95);
