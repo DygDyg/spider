@@ -157,6 +157,9 @@ export function useGame() {
     }));
     setGameState(result.newState);
     setHint(null);
+    // Сбрасываем подсказки при выполнении хода
+    lastHintsRef.current = [];
+    hintIndexRef.current = 0;
 
     // Проверяем победу
     if (result.newState.gameWon) {
@@ -194,6 +197,9 @@ export function useGame() {
     }));
     setGameState(newState);
     setHint(null);
+    // Сбрасываем подсказки при раздаче
+    lastHintsRef.current = [];
+    hintIndexRef.current = 0;
 
     if (newState.gameWon) {
       handleVictory(newState);
@@ -226,18 +232,31 @@ export function useGame() {
     setHint(null);
   }, [history]);
 
+  // Храним предыдущие подсказки и индекс текущей
+  const hintIndexRef = useRef(0);
+  const lastHintsRef = useRef<Hint[]>([]);
+
   // Подсказка
   const showHint = useCallback(() => {
     const currentState = gameStateRef.current;
     if (!currentState || currentState.gameOver) return;
 
-    const hints = getHints(currentState);
-    if (hints.length > 0) {
-      setHint(hints[0]);
-    } else if (canDeal(currentState)) {
-      showNotification('Нет доступных ходов. Раздайте карты из резерва.');
+    // Если подсказки ещё не рассчитаны или это первый вызов
+    if (lastHintsRef.current.length === 0) {
+      const hints = getHints(currentState, []);
+      lastHintsRef.current = hints;
+      hintIndexRef.current = 0;
     } else {
-      showNotification('Нет доступных ходов!');
+      // Переключаемся на следующую подсказку
+      hintIndexRef.current = (hintIndexRef.current + 1) % Math.max(1, lastHintsRef.current.length);
+    }
+
+    if (lastHintsRef.current.length > 0) {
+      setHint(lastHintsRef.current[hintIndexRef.current]);
+    } else if (canDeal(currentState)) {
+      showNotification('Полезных ходов не найдено. Раздайте карты из резерва.');
+    } else {
+      showNotification('Полезных ходов не найдено.');
     }
   }, [showNotification]);
 

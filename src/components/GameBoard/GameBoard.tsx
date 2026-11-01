@@ -35,8 +35,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const [boardHeight, setBoardHeight] = useState(600);
+  const [arrowCoords, setArrowCoords] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Вычисление смещения карт
+  const getCardOffset = (totalCards: number, index: number): number => {
+    const availableHeight = Math.max(300, boardHeight - 180);
+    const maxOffset = 28;
+    const minOffset = 14;
+    // Вычисляем высоту карты на основе ширины и фиксированного aspect-ratio (5:7)
+    const cardWidth = columnRefs.current[0]?.clientWidth || 70;
+    const cardHeight = cardWidth * 7 / 5;
+    const maxStackHeight = availableHeight - cardHeight;
+    const offset = totalCards > 1 
+      ? Math.min(maxOffset, Math.max(minOffset, maxStackHeight / (totalCards - 1)))
+      : 0;
+    return index * offset;
+  };
 
   // Track board height for card offset calculation
   useEffect(() => {
@@ -49,6 +65,55 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     window.addEventListener('resize', updateHeight);
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
+
+  // Вычисляем координаты стрелки подсказки
+  useEffect(() => {
+    if (!hint) {
+      setArrowCoords(null);
+      return;
+    }
+
+    const updateArrow = () => {
+      const sourceEl = columnRefs.current[hint.fromColumn];
+      const targetEl = columnRefs.current[hint.toColumn];
+      
+      if (!sourceEl || !targetEl) {
+        setArrowCoords(null);
+        return;
+      }
+
+      const sourceRect = sourceEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      // Исходная точка: центр верхней карты источника
+      const sourceCol = gameState.columns[hint.fromColumn];
+      const cardHeight = sourceEl.clientWidth * 7 / 5; // aspect ratio 5:7
+      const cardOffset = getCardOffset(sourceCol.cards.length, hint.cardIndex);
+      
+      const x1 = sourceRect.left + sourceRect.width / 2;
+      const y1 = sourceRect.top + cardOffset + cardHeight / 2;
+
+      // Целевая точка: верх целевой колонки (место куда ляжет карта)
+      const targetCol = gameState.columns[hint.toColumn];
+      const targetCardOffset = targetCol.cards.length > 0 
+        ? getCardOffset(targetCol.cards.length, targetCol.cards.length)
+        : 0;
+      
+      const x2 = targetRect.left + targetRect.width / 2;
+      const y2 = targetRect.top + targetCardOffset + 10;
+
+      setArrowCoords({ x1, y1, x2, y2 });
+    };
+
+    updateArrow();
+    window.addEventListener('resize', updateArrow);
+    window.addEventListener('scroll', updateArrow);
+    
+    return () => {
+      window.removeEventListener('resize', updateArrow);
+      window.removeEventListener('scroll', updateArrow);
+    };
+  }, [hint, gameState, boardHeight]);
 
   // Определение колонки по координатам
   const getColumnAtPoint = useCallback((x: number, y: number): number | null => {
@@ -214,21 +279,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [gameState, onMove]);
 
-  // Вычисление смещения карт
-  const getCardOffset = (totalCards: number, index: number): number => {
-    const availableHeight = Math.max(300, boardHeight - 180);
-    const maxOffset = 28;
-    const minOffset = 14;
-    // Вычисляем высоту карты на основе ширины и фиксированного aspect-ratio (5:7)
-    const cardWidth = columnRefs.current[0]?.clientWidth || 70;
-    const cardHeight = cardWidth * 7 / 5;
-    const maxStackHeight = availableHeight - cardHeight;
-    const offset = totalCards > 1 
-      ? Math.min(maxOffset, Math.max(minOffset, maxStackHeight / (totalCards - 1)))
-      : 0;
-    return index * offset;
-  };
-
   return (
     <div
       ref={boardRef}
@@ -342,6 +392,40 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {gameState.stock.length === 0 && <span className="stock-empty-text">Пусто</span>}
         </button>
       </div>
+
+      {/* Стрелка подсказки */}
+      {hint && arrowCoords && (
+        <svg className="hint-arrow" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          pointerEvents: 'none',
+          zIndex: 999,
+        }}>
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="7"
+              refX="9"
+              refY="3.5"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" className="hint-arrow-head" />
+            </marker>
+          </defs>
+          <line
+            x1={arrowCoords.x1}
+            y1={arrowCoords.y1}
+            x2={arrowCoords.x2}
+            y2={arrowCoords.y2}
+            className="hint-arrow-line"
+            markerEnd="url(#arrowhead)"
+          />
+        </svg>
+      )}
 
       {/* Завершённые комплекты */}
       <div className="completed-area">

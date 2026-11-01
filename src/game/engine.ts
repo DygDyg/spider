@@ -304,15 +304,136 @@ export function dealFromStock(state: GameState): GameState | null {
   return newState;
 }
 
-// Получение подсказок
-export function getHints(state: GameState): Hint[] {
-  const hints: Hint[] = [];
+// Хеширование состояния для обнаружения циклов
+export function hashState(state: GameState): string {
+  const parts: string[] = [];
+  for (const col of state.columns) {
+    const colStr = col.cards.map(c => `${c.rank}${c.suit[0]}${c.faceUp ? 'U' : 'D'}`).join(',');
+    parts.push(colStr);
+  }
+  return parts.join('|');
+}
+
+// Оценка качества хода
+function evaluateMove(state: GameState, fromCol: number, toCol: number, cardIdx: number): number {
+  let score = 0;
   
+  const sourceCol = state.columns[fromCol];
+  const targetCol = state.columns[toCol];
+  const cards = sourceCol.cards.slice(cardIdx);
+  
+  // 1. Открытие закрытой карты (высший приоритет)
+  const opensCard = cardIdx > 0 && !sourceCol.cards[cardIdx - 1].faceUp;
+  if (opensCard) score += 1000;
+  
+  // 2. Создание/удлинение одномастной последовательности
+  if (targetCol.cards.length > 0) {
+    const topCard = targetCol.cards[targetCol.cards.length - 1];
+    if (topCard.suit === cards[0].suit) {
+      score += 500;
+      
+      // Проверяем, не завершаем ли мы последовательность
+      const newSeq = [...targetCol.cards, ...cards];
+      if (newSeq.length >= 13 && isCompleteSequence(newSeq.slice(-13))) {
+        score += 2000;
+      }
+    }
+  }
+  
+  // 3. Освобождение колонки (если переносим все карты)
+  if (cardIdx === 0 && sourceCol.cards.length > 0) {
+    score += 200;
+  }
+  
+  // 4. Избегаем переноса на пустую колонку без причины
+  if (targetCol.cards.length === 0 && !opensCard) {
+    score -= 100;
+  }
+  
+  // 5. Штраф за перенос между эквивалентными пустыми колонками
+  if (sourceCol.cards.length === 0 || targetCol.cards.length === 0) {
+    const emptyCols = state.columns.filter(c => c.cards.length === 0).length;
+    if (emptyCols > 1 && targetCol.cards.length === 0 && cardIdx === 0) {
+      score -= 50;
+    }
+  }
+  
+  return score;
+}
+
+// Поиск ходов на 2 хода вперёд
+function lookAhead(state: GameState, fromCol: number, toCol: number, cardIdx: number, depth: number = 2): number {
+  if (depth === 0) return 0;
+  
+  const result = moveCards(state, fromCol, toCol, cardIdx);
+  if (!result) return 0;
+  
+  const newState = result.newState;
+  let futureScore = 0;
+  
+  // Считаем доступные ходы в новом состоянии
+  let availableMoves = 0;
+  let opensNewCards = 0;
+  
+  for (let col = 0; col < 10; col++) {
+    const column = newState.columns[col];
+    for (let idx = column.cards.length - 1; idx >= 0; idx--) {
+      if (!column.cards[idx].faceUp) break;
+      
+      const seq = column.cards.slice(idx);
+      if (!isValidSequence(seq)) break;
+      
+      for (let target = 0; target < 10; target++) {
+        if (target === col) continue;
+        if (canPlaceCards(seq, newState.columns[target])) {
+          availableMoves++;
+          if (idx > 0 && !column.cards[idx - 1].faceUp) {
+            opensNewCards++;
+          }
+        }
+      }
+    }
+  }
+  
+  futureScore += availableMoves * 10;
+  futureScore += opensNewCards * 200;
+  
+  // Рекурсивный поиск (ограниченный)
+  if (depth > 1 && availableMoves > 0) {
+    // Находим лучший ход в новом состоянии
+    let bestNextScore = 0;
+    for (let col = 0; col < 10 && col < 3; col++) { // Ограничиваем перебор
+      const column = newState.columns[col];
+      for (let idx = column.cards.length - 1; idx >= Math.max(0, column.cards.length - 3); idx--) {
+        if (!column.cards[idx].faceUp) break;
+        const seq = column.cards.slice(idx);
+        if (!isValidSequence(seq)) break;
+        
+        for (let target = 0; target < 10 && target < 3; target++) {
+          if (target === col) continue;
+          if (canPlaceCards(seq, newState.columns[target])) {
+            const nextScore = lookAhead(newState, col, target, idx, depth - 1);
+            bestNextScore = Math.max(bestNextScore, nextScore);
+          }
+        }
+      }
+    }
+    futureScore += bestNextScore * 0.5; // Коэффициент затухания
+  }
+  
+  return futureScore;
+}
+
+// Получение подсказок с умным алгоритмом
+export function getHints(state: GameState, previousHints: Hint[] = []): Hint[] {
+  const hints: Array<Hint & { score: number }> = [];
+  const currentStateHash = hashState(state);
+  
+  // Собираем все возможные ходы
   for (let fromCol = 0; fromCol < 10; fromCol++) {
     const column = state.columns[fromCol];
     if (column.cards.length === 0) continue;
     
-    // Находим все возможные точки начала перемещения
     for (let cardIdx = column.cards.length - 1; cardIdx >= 0; cardIdx--) {
       const card = column.cards[cardIdx];
       if (!card.faceUp) break;
@@ -326,30 +447,43 @@ export function getHints(state: GameState): Hint[] {
         const targetCol = state.columns[toCol];
         if (!canPlaceCards(seq, targetCol)) continue;
         
-        // Предпочитаем ходы, открывающие закрытые карты
-        const opensCard = cardIdx > 0 && !column.cards[cardIdx - 1].faceUp;
-        // Предпочитаем одномастные ходы
-        const sameSuit = targetCol.cards.length > 0 && 
-          targetCol.cards[targetCol.cards.length - 1].suit === card.suit;
+        // Базовая оценка хода
+        let score = evaluateMove(state, fromCol, toCol, cardIdx);
+        
+        // Поиск вперёд
+        score += lookAhead(state, fromCol, toCol, cardIdx, 2);
+        
+        // Штраф за возврат к предыдущему состоянию
+        const testResult = moveCards(state, fromCol, toCol, cardIdx);
+        if (testResult) {
+          const newStateHash = hashState(testResult.newState);
+          if (newStateHash === currentStateHash) {
+            score -= 5000; // Сильный штраф за цикл
+          }
+        }
+        
+        // Штраф за немедленный обратный ход
+        const isReverseMove = previousHints.some(
+          h => h.fromColumn === toCol && h.toColumn === fromCol
+        );
+        if (isReverseMove) {
+          score -= 3000;
+        }
         
         hints.push({
           fromColumn: fromCol,
           toColumn: toCol,
           cardIndex: cardIdx,
-          // Приоритет: меньше = лучше
+          score,
         });
-        
-        // Сортируем по приоритету (внешняя логика)
-        (hints[hints.length - 1] as any)._priority = 
-          (opensCard ? 0 : 10) + (sameSuit ? 0 : 5) + (targetCol.cards.length === 0 ? 3 : 0);
       }
     }
   }
   
-  // Сортируем по приоритету
-  hints.sort((a, b) => ((a as any)._priority || 0) - ((b as any)._priority || 0));
+  // Сортируем по оценке (убывание)
+  hints.sort((a, b) => b.score - a.score);
   
-  // Убираем служебное поле
+  // Убираем служебное поле score
   return hints.map(({ fromColumn, toColumn, cardIndex }) => ({ fromColumn, toColumn, cardIndex }));
 }
 

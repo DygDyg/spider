@@ -291,11 +291,7 @@ html, body {
   border-radius: var(--card-radius);
 }
 
-.column-hint-target {
-  background: var(--hint-glow);
-  border-radius: var(--card-radius);
-  animation: hintPulse 1s ease-in-out infinite;
-}
+/* column-hint-target moved to hint section */
 
 .column-selected {
   background: rgba(255,255,255,0.1);
@@ -333,23 +329,14 @@ html, body {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   box-shadow: 0 2px 4px var(--card-shadow);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 3px 4px;
   overflow: hidden;
   position: relative;
 }
 
-.card-face::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
-  pointer-events: none;
+.card-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .card-back {
@@ -404,240 +391,7 @@ html, body {
   border-radius: 2px;
 }
 
-.card-corner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-}
-
-.card-corner-top {
-  align-self: flex-start;
-}
-
-.card-corner-bottom {
-  align-self: flex-end;
-  transform: rotate(180deg);
-}
-
-.card-rank {
-  font-size: 13px;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.card-suit-small {
-  font-size: 10px;
-  line-height: 1;
-}
-
-.card-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-suit-large {
-  font-size: 24px;
-  line-height: 1;
-}
-
-/* ===== Раскладка символов мастей на числовых картах ===== */
-.card-pips {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.pip {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Классическая раскладка для числовых карт */
-/* 2: верх и низ */
-.pip-top {
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.pip-bottom {
-  bottom: 20%;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
-}
-
-/* 3: верх, центр, низ */
-.pip-center {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Угловые позиции для 4, 5, 6, 7, 8, 9, 10 */
-.pip-top-left {
-  top: 20%;
-  left: 30%;
-  transform: translate(-50%, -50%);
-}
-
-.pip-top-right {
-  top: 20%;
-  right: 30%;
-  transform: translate(50%, -50%);
-}
-
-.pip-bottom-left {
-  bottom: 20%;
-  left: 30%;
-  transform: translate(-50%, 50%) rotate(180deg);
-}
-
-.pip-bottom-right {
-  bottom: 20%;
-  right: 30%;
-  transform: translate(50%, 50%) rotate(180deg);
-}
-
-/* Средние позиции для 6, 7, 8, 9, 10 */
-.pip-middle-left {
-  top: 50%;
-  left: 30%;
-  transform: translate(-50%, -50%);
-}
-
-.pip-middle-right {
-  top: 50%;
-  right: 30%;
-  transform: translate(50%, -50%);
-}
-
-/* Центральные позиции для 7, 8, 9, 10 */
-.pip-top-center {
-  top: 20%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.pip-bottom-center {
-  bottom: 20%;
-  left: 50%;
-  transform: translate(-50%, 50%) rotate(180deg);
-}
-
-.pip-middle-center {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Дополнительные позиции для 10 */
-.pip-middle-top {
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.pip-middle-bottom {
-  top: 65%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(180deg);
-}
-
-/* Туз - большой символ по центру */
-.ace-layout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pip-center-large {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Фигурные карты */
-.face-card-svg {
-  width: 80%;
-  height: 80%;
-  max-width: 50px;
-  max-height: 70px;
-}
-
-/* Адаптивные размеры для маленьких экранов */
-@media (max-width: 768px) {
-  .card-pips svg {
-    width: 12px;
-    height: 12px;
-  }
-  
-  .ace-layout svg {
-    width: 30px;
-    height: 30px;
-  }
-  
-  .face-card-svg {
-    max-width: 40px;
-    max-height: 56px;
-  }
-}
-
-@media (max-width: 480px) {
-  .card-pips svg {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .ace-layout svg {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .face-card-svg {
-    max-width: 30px;
-    max-height: 42px;
-  }
-}
-
-@media (max-width: 360px) {
-  .card-pips svg {
-    width: 8px;
-    height: 8px;
-  }
-  
-  .ace-layout svg {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .face-card-svg {
-    max-width: 24px;
-    max-height: 34px;
-  }
-}
-
-.card-face-card {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.3;
-}
-
-.card-crown {
-  width: 30px;
-  height: 30px;
-}
+/* Все стили карт теперь через единый SVG с viewBox — пропорции сохраняются автоматически */
 
 .card-highlighted {
   box-shadow: 0 0 8px var(--highlight), 0 2px 4px var(--card-shadow);
@@ -645,8 +399,38 @@ html, body {
 }
 
 .card-hint {
-  animation: hintCardPulse 1s ease-in-out infinite;
-  box-shadow: 0 0 12px var(--hint-glow);
+  animation: hintCardPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 12px var(--hint-glow), 0 0 4px rgba(255, 215, 0, 0.8);
+  border-color: #FFD700;
+  border-width: 2px;
+}
+
+.column-hint-target {
+  background: rgba(76, 175, 80, 0.3);
+  border: 2px dashed #4CAF50;
+  border-radius: var(--card-radius);
+  animation: hintColumnPulse 1.5s ease-in-out infinite;
+}
+
+/* Стрелка подсказки */
+.hint-arrow {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.hint-arrow-line {
+  stroke: #FFD700;
+  stroke-width: 3;
+  stroke-dasharray: 8 4;
+  fill: none;
+  animation: hintDash 1s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+}
+
+.hint-arrow-head {
+  fill: #FFD700;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
 }
 
 /* ===== Drag Preview ===== */
@@ -1146,8 +930,29 @@ html, body {
 }
 
 @keyframes hintCardPulse {
-  0%, 100% { box-shadow: 0 0 8px var(--hint-glow); }
-  50% { box-shadow: 0 0 16px var(--hint-glow); }
+  0%, 100% { 
+    box-shadow: 0 0 8px var(--hint-glow), 0 0 4px rgba(255, 215, 0, 0.8);
+    border-color: #FFD700;
+  }
+  50% { 
+    box-shadow: 0 0 20px var(--hint-glow), 0 0 8px rgba(255, 215, 0, 1);
+    border-color: #FFC107;
+  }
+}
+
+@keyframes hintColumnPulse {
+  0%, 100% { 
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #4CAF50;
+  }
+  50% { 
+    background: rgba(76, 175, 80, 0.4);
+    border-color: #66BB6A;
+  }
+}
+
+@keyframes hintDash {
+  to { stroke-dashoffset: -24; }
 }
 
 @keyframes bounce {
@@ -1236,9 +1041,6 @@ html, body {
     --column-gap: 4px;
   }
   
-  .card-rank { font-size: 11px; }
-  .card-suit-small { font-size: 9px; }
-  .card-suit-large { font-size: 20px; }
   .btn-text { display: none; }
   .toolbar-btn { padding: 6px 8px; }
 }
@@ -1267,10 +1069,6 @@ html, body {
     font-size: 12px;
   }
   
-  .card-rank { font-size: 10px; }
-  .card-suit-small { font-size: 8px; }
-  .card-suit-large { font-size: 16px; }
-  
   .difficulty-btn {
     padding: 12px;
   }
@@ -1298,15 +1096,6 @@ html, body {
     --column-gap: 2px;
     --board-padding: 4px;
   }
-  
-  .card-corner {
-    padding: 1px;
-  }
-  
-  .card-rank { font-size: 8px; }
-  .card-suit-small { font-size: 7px; }
-  .card-suit-large { font-size: 12px; }
-  .card-corner-bottom { display: none; }
   
   .toolbar {
     flex-wrap: nowrap;
@@ -1352,10 +1141,6 @@ html, body {
   :root {
     --card-width: 30px;
   }
-  
-  .card-rank { font-size: 7px; }
-  .card-suit-small { font-size: 6px; }
-  .card-suit-large { font-size: 10px; }
 }
 
 /* Horizontal scroll for very narrow screens */
