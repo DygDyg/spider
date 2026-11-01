@@ -4,13 +4,17 @@ import { isValidSequence, canPlaceCards } from '../../game/engine';
 import { CardComponent } from '../Card/Card';
 import { flipAnimator } from '../../services/FlipAnimator';
 import { audioManager } from '../../services/AudioManager';
+import { AnimationState } from '../../hooks/useGame';
 
 interface GameBoardProps {
   gameState: GameState;
   hint: Hint | null;
   settings: Settings;
+  animationState: AnimationState;
+  dealId: string | null;
   onMove: (from: number, to: number, cardIndex: number) => boolean;
   onDeal: () => void;
+  onCompleteAnimation: () => void;
   canDeal: boolean;
 }
 
@@ -29,8 +33,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
   hint,
   settings,
+  animationState,
+  dealId,
   onMove,
   onDeal,
+  onCompleteAnimation,
   canDeal: canDealProp,
 }) => {
   const [selectedCard, setSelectedCard] = useState<{ column: number; index: number } | null>(null);
@@ -39,10 +46,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [boardHeight, setBoardHeight] = useState(600);
   const [arrowCoords, setArrowCoords] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const [isDealing, setIsDealing] = useState(false);
+  const [dealtCardIds, setDealtCardIds] = useState<Set<string>>(new Set());
+  const [stockDealCardIds, setStockDealCardIds] = useState<Set<string>>(new Set());
   const boardRef = useRef<HTMLDivElement>(null);
   const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prevGameStateRef = useRef<GameState | null>(null);
-  const isInitialMount = useRef(true);
+  const prevDealIdRef = useRef<string | null>(null);
 
   // Вычисление смещения карт
   const getCardOffset = (totalCards: number, index: number): number => {
@@ -124,29 +133,50 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (!boardRef.current) return;
 
-    // При первом монтировании — анимация раздачи
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      prevGameStateRef.current = gameState;
-      
-      // Анимация первоначальной раздачи
-      if (settings.animations && settings.dealAnimation) {
-        animateInitialDeal();
+    const prevState = prevGameStateRef.current;
+    const prevDealId = prevDealIdRef.current;
+    
+    // Обновляем refs
+    prevGameStateRef.current = gameState;
+    prevDealIdRef.current = dealId;
+
+    // Проверяем, изменился ли dealId - это новая игра
+    if (dealId && dealId !== prevDealId) {
+      // Новая игра - запускаем первоначальную раздачу
+      if (settings.animations && settings.dealAnimation && animationState === 'initial-deal') {
+        animateInitialDeal(dealId);
+      } else {
+        // Анимации отключены или это восстановление сохранённой игры
+        onCompleteAnimation();
       }
       return;
     }
 
-    // При изменении gameState — FLIP-анимация
-    const prevState = prevGameStateRef.current;
-    if (!prevState) {
-      prevGameStateRef.current = gameState;
-      return;
-    }
+    // Если нет предыдущего состояния - ничего не анимируем
+    if (!prevState) return;
 
     // Проверяем раздачу из резерва
     const stockDecreased = gameState.stock.length < prevState.stock.length;
-    if (stockDecreased && settings.animations && settings.dealAnimation) {
-      animateStockDeal();
+    if (stockDecreased && animationState === 'stock-deal') {
+      // Находим новые карты (те, которых не было в prevState)
+      const prevCardIds = new Set<string>();
+      prevState.columns.forEach(col => col.cards.forEach(card => prevCardIds.add(card.id)));
+      
+      const newCardIds: string[] = [];
+      gameState.columns.forEach(col => {
+        col.cards.forEach(card => {
+          if (!prevCardIds.has(card.id)) {
+            newCardIds.push(card.id);
+          }
+        });
+      });
+      
+      if (settings.animations && settings.dealAnimation) {
+        animateStockDeal(newCardIds);
+      } else {
+        onCompleteAnimation();
+      }
+      return;
     }
 
     // Проверяем переворот карт
@@ -200,7 +230,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       });
     });
-  }, [gameState, settings]);
+  }, [gameState, settings, animationState, dealId, onCompleteAnimation]);
 
   // Проверка переворота карт
   const checkCardFlips = useCallback((prevState: GameState, newState: GameState) => {
@@ -228,10 +258,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, []);
 
   // Анимация раздачи из резерва
-  const animateStockDeal = useCallback(async () => {
+  const animateStockDeal = useCallback(async (newCardIds: string[]) => {
     if (!boardRef.current) return;
     
     setIsDealing(true);
+    setStockDealCardIds(new Set(newCardIds));
     
     // Находим позицию колоды (stock area)
     const stockEl = boardRef.current.querySelector('.stock-pile');
@@ -239,16 +270,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const fromX = stockRect?.left || 50;
     const fromY = stockRect?.top || window.innerHeight - 150;
 
-    // Получаем все карты
-    const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
-    
-    // Анимируем последние 10 карт (те, что только что добавились)
-    const totalCards = cardElements.length;
-    const dealtCards = Array.from(cardElements).slice(totalCards - 10);
-    
+    // Анимируем только новые карты
     const promises: Promise<void>[] = [];
-    dealtCards.forEach((el, index) => {
-      const htmlEl = el as HTMLElement;
+    newCardIds.forEach((cardId, index) => {
+      const cardEl = boardRef.current?.querySelector(`[data-card-id="${cardId}"]`);
+      if (!cardEl) return;
+      
+      const htmlEl = cardEl as HTMLElement;
       const rect = htmlEl.getBoundingClientRect();
       
       const delay = index * 50; // 50ms между картами
@@ -272,14 +300,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
 
     await Promise.all(promises);
+    setStockDealCardIds(new Set());
     setIsDealing(false);
-  }, [settings]);
+    onCompleteAnimation();
+  }, [settings, onCompleteAnimation]);
 
   // Анимация первоначальной раздачи
-  const animateInitialDeal = useCallback(async () => {
+  const animateInitialDeal = useCallback(async (currentDealId: string) => {
     if (!boardRef.current) return;
     
+    // Проверяем, что dealId всё ещё актуален
+    if (currentDealId !== dealId) return;
+    
     setIsDealing(true);
+    
+    // Собираем все ID карт из gameState
+    const allCardIds: string[] = [];
+    gameState.columns.forEach(col => {
+      col.cards.forEach(card => {
+        allCardIds.push(card.id);
+      });
+    });
     
     // Находим позицию колоды (stock area)
     const stockEl = boardRef.current.querySelector('.stock-pile');
@@ -287,19 +328,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const fromX = stockRect?.left || 50;
     const fromY = stockRect?.top || window.innerHeight - 150;
 
-    // Получаем все карты
-    const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
-    
     // Анимируем каждую карту с задержкой
     const promises: Promise<void>[] = [];
-    cardElements.forEach((el, index) => {
-      const htmlEl = el as HTMLElement;
+    allCardIds.forEach((cardId, index) => {
+      const cardEl = boardRef.current?.querySelector(`[data-card-id="${cardId}"]`);
+      if (!cardEl) return;
+      
+      const htmlEl = cardEl as HTMLElement;
       const rect = htmlEl.getBoundingClientRect();
       
       const delay = index * 40; // 40ms между картами
       
       const promise = new Promise<void>((resolve) => {
         setTimeout(() => {
+          // Проверяем, что dealId всё ещё актуален
+          if (currentDealId !== dealId) {
+            resolve();
+            return;
+          }
+          
           flipAnimator.animateCardDeal(
             htmlEl,
             fromX,
@@ -317,8 +364,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
 
     await Promise.all(promises);
+    
+    // Проверяем, что dealId всё ещё актуален
+    if (currentDealId !== dealId) return;
+    
     setIsDealing(false);
-  }, [settings]);
+    onCompleteAnimation();
+  }, [settings, dealId, gameState, onCompleteAnimation]);
 
   // Анимация завершения последовательности
   const animateSequenceComplete = useCallback(async () => {
@@ -383,7 +435,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Начало перетаскивания
   const handlePointerDown = useCallback((e: React.PointerEvent, colIndex: number, cardIndex: number) => {
-    if (gameState.gameOver || isDealing) return;
+    if (gameState.gameOver || animationState !== 'idle') return;
     
     const card = gameState.columns[colIndex].cards[cardIndex];
     if (!card.faceUp) return;
