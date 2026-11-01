@@ -67,14 +67,6 @@ export const OpenDecksCard: React.FC<OpenDecksCardProps> = ({
       const svgPath = `${baseUrl}cards/${suitName}/${fileName}`;
       const cacheKey = `${svgPath}-${isDarkTheme}`;
 
-      // Пока в репозитории присутствует лишь один оригинальный SVG.
-      // Не отправляем десятки заведомо неудачных запросов для отсутствующей колоды.
-      if (!(card.suit === 'spades' && card.rank === 1)) {
-        setUseFallback(true);
-        setLoading(false);
-        return;
-      }
-
       // Проверяем кэш
       if (svgCache.has(cacheKey)) {
         setSvgContent(svgCache.get(cacheKey)!);

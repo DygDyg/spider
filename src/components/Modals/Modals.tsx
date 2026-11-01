@@ -94,6 +94,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           </div>
           
           <div className="settings-group">
+            <label className="settings-label">Колода карт</label>
+            <div className="size-options">
+              <button className={`size-btn ${settings.cardDeck !== 'classic' ? 'active' : ''}`} onClick={() => onUpdate({cardDeck:'opendecks'})}>OpenDecks</button>
+              <button className={`size-btn ${settings.cardDeck === 'classic' ? 'active' : ''}`} onClick={() => onUpdate({cardDeck:'classic'})}>Классические ♠ ♣ ♥ ♦</button>
+            </div>
+          </div>
+          <div className="settings-group">
             <label className="settings-label">Анимации</label>
             <label className="settings-toggle">
               <input

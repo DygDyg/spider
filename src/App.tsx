@@ -6,8 +6,10 @@ import { DifficultyModal, SettingsModal, StatsModal, VictoryModal } from './comp
 import { Difficulty } from './game/types';
 import { audioManager } from './services/AudioManager';
 import CardPreview from './pages/CardPreview';
+import { useInstallApp } from './hooks/useInstallApp';
 
 function App() {
+  const { install, isInstalled } = useInstallApp();
   // Проверка маршрута для страницы предпросмотра карт
   const [showCardPreview, setShowCardPreview] = useState(
     window.location.pathname === '/card-preview' || 
@@ -179,6 +181,7 @@ function App() {
         canDeal={canDeal}
       />
 
+      {!isInstalled && <button type="button" className="pwa-install" onClick={install}>Установить приложение</button>}
       {/* Уведомление */}
       {notification && (
         <div className="notification">
