@@ -1001,9 +1001,32 @@ html, body {
 .card-flip {
   animation: cardFlip 300ms ease-in-out;
   transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 @keyframes cardFlip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+/* Card flip container for 3D effect */
+.card-wrapper {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card-wrapper.flipping {
+  animation: cardFlip3D 400ms ease-in-out;
+}
+
+@keyframes cardFlip3D {
   0% {
     transform: rotateY(0deg);
   }

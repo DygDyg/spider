@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { GameState, Hint, Card as CardType, Settings } from '../../game/types';
 import { isValidSequence, canPlaceCards } from '../../game/engine';
 import { CardComponent } from '../Card/Card';
+import { flipAnimator } from '../../services/FlipAnimator';
+import { audioManager } from '../../services/AudioManager';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -36,8 +38,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const [boardHeight, setBoardHeight] = useState(600);
   const [arrowCoords, setArrowCoords] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const [isDealing, setIsDealing] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
   const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const prevGameStateRef = useRef<GameState | null>(null);
+  const isInitialMount = useRef(true);
 
   // Вычисление смещения карт
   const getCardOffset = (totalCards: number, index: number): number => {
@@ -115,6 +120,254 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [hint, gameState, boardHeight]);
 
+  // FLIP-анимация при изменении gameState
+  useEffect(() => {
+    if (!boardRef.current) return;
+
+    // При первом монтировании — анимация раздачи
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevGameStateRef.current = gameState;
+      
+      // Анимация первоначальной раздачи
+      if (settings.animations && settings.dealAnimation) {
+        animateInitialDeal();
+      }
+      return;
+    }
+
+    // При изменении gameState — FLIP-анимация
+    const prevState = prevGameStateRef.current;
+    if (!prevState) {
+      prevGameStateRef.current = gameState;
+      return;
+    }
+
+    // Проверяем раздачу из резерва
+    const stockDecreased = gameState.stock.length < prevState.stock.length;
+    if (stockDecreased && settings.animations && settings.dealAnimation) {
+      animateStockDeal();
+    }
+
+    // Проверяем переворот карт
+    if (settings.animations) {
+      checkCardFlips(prevState, gameState);
+    }
+
+    // Проверяем завершение последовательности
+    const sequenceCompleted = gameState.completedSets.length > prevState.completedSets.length;
+    if (sequenceCompleted && settings.animations && settings.completeAnimation) {
+      animateSequenceComplete();
+    }
+
+    // Проверяем победу
+    if (gameState.gameWon && settings.animations) {
+      animateVictory();
+    }
+
+    // Захватываем позиции ДО изменения
+    flipAnimator.capturePositions(boardRef.current);
+
+    // Сохраняем текущее состояние как предыдущее
+    prevGameStateRef.current = gameState;
+
+    // После перерисовки React — анимируем перемещения
+    requestAnimationFrame(() => {
+      if (!boardRef.current) return;
+
+      const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
+      cardElements.forEach((el) => {
+        const id = el.getAttribute('data-card-id');
+        if (!id) return;
+
+        const savedPos = flipAnimator.getPosition(id);
+        if (!savedPos) return;
+
+        const rect = el.getBoundingClientRect();
+        const deltaX = savedPos.x - rect.left;
+        const deltaY = savedPos.y - rect.top;
+
+        // Если карта переместилась — анимируем
+        if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+          flipAnimator.animateCardMove(
+            el as HTMLElement,
+            savedPos.x,
+            savedPos.y,
+            rect.left,
+            rect.top,
+            250
+          );
+        }
+      });
+    });
+  }, [gameState, settings]);
+
+  // Проверка переворота карт
+  const checkCardFlips = useCallback((prevState: GameState, newState: GameState) => {
+    for (let colIdx = 0; colIdx < 10; colIdx++) {
+      const prevCol = prevState.columns[colIdx];
+      const newCol = newState.columns[colIdx];
+      
+      for (let cardIdx = 0; cardIdx < newCol.cards.length; cardIdx++) {
+        const prevCard = prevCol.cards[cardIdx];
+        const newCard = newCol.cards[cardIdx];
+        
+        if (prevCard && !prevCard.faceUp && newCard.faceUp) {
+          // Карта перевернулась — анимируем
+          const cardEl = boardRef.current?.querySelector(`[data-card-id="${newCard.id}"]`);
+          if (cardEl) {
+            cardEl.classList.add('flipping');
+            audioManager.play('cardFlip');
+            setTimeout(() => {
+              cardEl.classList.remove('flipping');
+            }, 400);
+          }
+        }
+      }
+    }
+  }, []);
+
+  // Анимация раздачи из резерва
+  const animateStockDeal = useCallback(async () => {
+    if (!boardRef.current) return;
+    
+    setIsDealing(true);
+    
+    // Находим позицию колоды (stock area)
+    const stockEl = boardRef.current.querySelector('.stock-pile');
+    const stockRect = stockEl?.getBoundingClientRect();
+    const fromX = stockRect?.left || 50;
+    const fromY = stockRect?.top || window.innerHeight - 150;
+
+    // Получаем все карты
+    const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
+    
+    // Анимируем последние 10 карт (те, что только что добавились)
+    const totalCards = cardElements.length;
+    const dealtCards = Array.from(cardElements).slice(totalCards - 10);
+    
+    const promises: Promise<void>[] = [];
+    dealtCards.forEach((el, index) => {
+      const htmlEl = el as HTMLElement;
+      const rect = htmlEl.getBoundingClientRect();
+      
+      const delay = index * 50; // 50ms между картами
+      
+      const promise = new Promise<void>((resolve) => {
+        setTimeout(() => {
+          flipAnimator.animateCardDeal(
+            htmlEl,
+            fromX,
+            fromY,
+            rect.left,
+            rect.top,
+            300
+          ).then(resolve);
+          
+          audioManager.play('cardPlace');
+        }, delay);
+      });
+      
+      promises.push(promise);
+    });
+
+    await Promise.all(promises);
+    setIsDealing(false);
+  }, [settings]);
+
+  // Анимация первоначальной раздачи
+  const animateInitialDeal = useCallback(async () => {
+    if (!boardRef.current) return;
+    
+    setIsDealing(true);
+    
+    // Находим позицию колоды (stock area)
+    const stockEl = boardRef.current.querySelector('.stock-pile');
+    const stockRect = stockEl?.getBoundingClientRect();
+    const fromX = stockRect?.left || 50;
+    const fromY = stockRect?.top || window.innerHeight - 150;
+
+    // Получаем все карты
+    const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
+    
+    // Анимируем каждую карту с задержкой
+    const promises: Promise<void>[] = [];
+    cardElements.forEach((el, index) => {
+      const htmlEl = el as HTMLElement;
+      const rect = htmlEl.getBoundingClientRect();
+      
+      const delay = index * 40; // 40ms между картами
+      
+      const promise = new Promise<void>((resolve) => {
+        setTimeout(() => {
+          flipAnimator.animateCardDeal(
+            htmlEl,
+            fromX,
+            fromY,
+            rect.left,
+            rect.top,
+            300
+          ).then(resolve);
+          
+          audioManager.play('cardDeal');
+        }, delay);
+      });
+      
+      promises.push(promise);
+    });
+
+    await Promise.all(promises);
+    setIsDealing(false);
+  }, [settings]);
+
+  // Анимация завершения последовательности
+  const animateSequenceComplete = useCallback(async () => {
+    if (!boardRef.current) return;
+    
+    // Находим область завершённых комплектов
+    const completedArea = boardRef.current.querySelector('.completed-area');
+    const completedRect = completedArea?.getBoundingClientRect();
+    const targetX = completedRect?.left || window.innerWidth - 100;
+    const targetY = completedRect?.top || window.innerHeight - 150;
+
+    // Получаем все карты из последней завершённой последовательности
+    // (они уже удалены из gameState, но мы можем анимировать последние видимые карты)
+    const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
+    
+    // Находим 13 карт одной масти (последовательность)
+    // Для простоты анимируем последние видимые карты
+    const lastCards = Array.from(cardElements).slice(-13);
+    
+    if (lastCards.length > 0) {
+      audioManager.play('sequenceComplete');
+      
+      await flipAnimator.animateSequenceComplete(
+        lastCards as unknown as HTMLElement[],
+        targetX,
+        targetY,
+        400
+      );
+    }
+  }, []);
+
+  // Победная анимация
+  const animateVictory = useCallback(async () => {
+    if (!boardRef.current) return;
+    
+    audioManager.play('victory');
+    
+    const cardElements = boardRef.current.querySelectorAll('[data-card-id]');
+    if (cardElements.length > 0) {
+      await flipAnimator.animateVictory(Array.from(cardElements) as unknown as HTMLElement[]);
+    }
+  }, []);
+
+  // Синхронизация настроек анимации с FlipAnimator
+  useEffect(() => {
+    flipAnimator.setEnabled(settings.animations);
+    flipAnimator.setSpeed(settings.animationSpeed);
+  }, [settings.animations, settings.animationSpeed]);
+
   // Определение колонки по координатам
   const getColumnAtPoint = useCallback((x: number, y: number): number | null => {
     for (let i = 0; i < 10; i++) {
@@ -130,7 +383,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Начало перетаскивания
   const handlePointerDown = useCallback((e: React.PointerEvent, colIndex: number, cardIndex: number) => {
-    if (gameState.gameOver) return;
+    if (gameState.gameOver || isDealing) return;
     
     const card = gameState.columns[colIndex].cards[cardIndex];
     if (!card.faceUp) return;
@@ -315,6 +568,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               return (
                 <div
                   key={card.id}
+                  data-card-id={card.id}
                   className={`card-wrapper ${isDragging ? 'card-dragging' : ''}`}
                   style={{
                     top: `${getCardOffset(column.cards.length, cardIndex)}px`,
