@@ -445,6 +445,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     e.preventDefault();
     e.stopPropagation();
+    boardRef.current?.setPointerCapture(e.pointerId);
 
     setDragState({
       fromColumn: colIndex,
@@ -470,8 +471,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setDragState(prev => prev ? { ...prev, isDragging: true } : null);
     }
 
-    if (dragState.isDragging) {
-      setDragState(prev => prev ? { ...prev, currentX: e.clientX, currentY: e.clientY } : null);
+    if (dragState.isDragging || Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      setDragState(prev => prev ? { ...prev, isDragging: true, currentX: e.clientX, currentY: e.clientY } : null);
       
       const col = getColumnAtPoint(e.clientX, e.clientY);
       setDropTarget(col !== dragState.fromColumn ? col : null);
@@ -479,21 +480,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [dragState, getColumnAtPoint]);
 
   // Конец перетаскивания
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragState) return;
 
-    if (dragState.isDragging && dropTarget !== null && dropTarget !== dragState.fromColumn) {
-      const targetCol = gameState.columns[dropTarget];
+    if (boardRef.current?.hasPointerCapture(e.pointerId)) boardRef.current.releasePointerCapture(e.pointerId);
+    const target = getColumnAtPoint(e.clientX, e.clientY);
+    const distance = Math.hypot(e.clientX - dragState.startX, e.clientY - dragState.startY);
+    if ((dragState.isDragging || distance > 5) && target !== null && target !== dragState.fromColumn) {
+      const targetCol = gameState.columns[target];
       const cards = gameState.columns[dragState.fromColumn].cards.slice(dragState.cardIndex);
       
       if (targetCol.cards.length === 0 || canPlaceCards(cards, targetCol)) {
-        onMove(dragState.fromColumn, dropTarget, dragState.cardIndex);
+        onMove(dragState.fromColumn, target, dragState.cardIndex);
       }
     }
 
     setDragState(null);
     setDropTarget(null);
-  }, [dragState, dropTarget, gameState, onMove]);
+  }, [dragState, gameState, onMove, getColumnAtPoint]);
 
   // Клик по карте
   const handleCardClick = useCallback((colIndex: number, cardIndex: number) => {
